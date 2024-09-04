@@ -7,6 +7,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
@@ -23,6 +24,8 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter =
             new JwtGrantedAuthoritiesConverter();
 
+    private final String principleAttribute = "preferred_username";
+
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
         var authorities  = Stream.concat(
@@ -37,7 +40,11 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     }
 
     private String getPrincipleClaimName(Jwt jwt) {
-        return null;
+        String claimName = JwtClaimNames.SUB;
+        if(principleAttribute != null){
+            claimName = principleAttribute;
+        }
+        return jwt.getClaim(claimName);
     }
 
     private Collection<?extends GrantedAuthority> extractResourceRoles(Jwt jwt){
