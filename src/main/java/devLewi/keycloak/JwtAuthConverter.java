@@ -1,6 +1,7 @@
 package devLewi.keycloak;
 
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
@@ -24,14 +25,18 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
     private final JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter =
             new JwtGrantedAuthoritiesConverter();
 
-    private final String principleAttribute = "preferred_username";
+    @Value("${}")
+    private  String principleAttribute;
+
+    private  String resourceId;
 
     @Override
     public AbstractAuthenticationToken convert(@NonNull Jwt jwt) {
-        var authorities  = Stream.concat(
+        Collection<GrantedAuthority> authorities  = Stream.concat(
                 jwtGrantedAuthoritiesConverter.convert(jwt).stream(),
                 extractResourceRoles(jwt).stream()
-        );
+        )
+                .collect(Collectors.toSet());
         return new JwtAuthenticationToken(
                 jwt,
                 authorities,
@@ -56,10 +61,10 @@ public class JwtAuthConverter implements Converter<Jwt, AbstractAuthenticationTo
         }
         resourceAccess = jwt.getClaim("resource_access");
 
-        if(resourceAccess.get("wanjohi-rest-api") == null){
+        if(resourceAccess.get(resourceId) == null){
             return Set.of();
         }
-        resource = (Map<String, Object>) resourceAccess.get("wanjohi-rest-api");
+        resource = (Map<String, Object>) resourceAccess.get(resourceId);
 
         resourceRoles = (Collection<String>) resource.get("roles");
         return resourceRoles
